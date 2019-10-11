@@ -1,5 +1,5 @@
 ---
-title: "Data Science ! Homework 3"
+title: "Data Science I Homework 3"
 author: "Charlotte Fowler"
 date: "10/9/2019"
 output: github_document
@@ -72,7 +72,7 @@ instacart %>%
   arrange(-n) %>% 
   ggplot(aes(x = reorder(aisle, -n), y = n, fill = department)) +
   geom_bar(stat = "identity") +
-  coord_flip() 
+  coord_flip()
 
 ```
 
@@ -115,5 +115,103 @@ instacart %>%
 # Problem 2 
 ```{r}
 data("brfss_smart2010")
+```
+
+First, do some data cleaning:
+
+format the data to use appropriate variable names;
+focus on the “Overall Health” topic
+include only responses from “Excellent” to “Poor”
+organize responses as a factor taking levels ordered from “Poor” to “Excellent”
+
+```{r} 
+brfss_smart2010 = brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  separate(locationdesc, 
+           into = c('state', 'county'),
+           sep = " - ") %>% 
+  select(-locationabbr) %>% 
+  filter(
+    topic == 'Overall Health',
+    response == c('Excellent', 'Good', 'Very Good', 'Fair', 'Poor')
+  ) %>% 
+  mutate(response = forcats::fct_relevel(response, c("Poor", "Fair", "Good", "Very Good", "Excellent")))
+```
+
+
+
+
+
+
+
+
+In 2002, which states were observed at 7 or more locations? What about in 2010?
+
+```{r}
+brfss_smart2010 %>% 
+  filter(year==2002) %>% 
+  count(state) %>% 
+  filter(n>=7)
+```
+```{r}
+brfss_smart2010 %>% 
+  filter(year == 2010) %>% 
+  count(state) %>% 
+  filter(n>=7)
+```
+
+
+In 2002, Massachusetts, New Jersey and Pennsylvania were observed at 7 or more locations. In 2010, California, Florida, Idaho, Massachusetts, Maryland, New York, Pennsylvania, and Texas were observed in 7 or more locations.  
+
+
+Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the  data_value across locations within a state.
+Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+
+```{r}
+brfss_smart2010 %>% 
+  filter(response == 'Excellent') %>% 
+  group_by(state, year) %>% 
+  summarize(mean_value = mean(data_value)) %>% 
+  ggplot(
+    aes(x = year, y = mean_value, color = state)) +
+  geom_line() + 
+  labs(x = 'Year', y = 'Mean Data Value') + 
+  viridis::scale_color_viridis(
+    discrete = TRUE, 
+    name = "State"
+    ) +
+  theme_bw() 
+```
+
+
+
+Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+
+
+
+```{r}
+brfss_smart2010 %>% 
+  filter(
+    year %in% c(2006, 2010), 
+    state == 'NY'
+  ) %>% 
+  ggplot(aes( x = response, y = data_value)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid(~year)
+  
+```
+
+
+# Problem 3 
+
+```{r}
+accel_data = read_csv("./data/accel_data.csv")
+```
+Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
+
+```{r}
+accel_data = accel_data# %>% 
+  
 ```
 
