@@ -1,5 +1,5 @@
 ---
-title: "Data Science I Homework 3"
+title: "Homework 3"
 author: "Charlotte Fowler"
 date: "10/9/2019"
 output: github_document
@@ -54,9 +54,16 @@ instacart %>%
   group_by(aisle) %>% 
   count() %>% 
   arrange(-n) %>% 
-  filter(n>70000)
+  .[0:4,] %>% 
+  knitr::kable()
 ```
-There are 134 aisles. The most popular are fresh vegetables, fresh fruits, and packaged vegetables fruits. 
+
+
+
+
+
+
+There are 134 aisles. The most popular are fresh vegetables, fresh fruits,  packaged vegetables fruits, and yogurt. 
 
 
 Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
@@ -80,17 +87,59 @@ instacart %>%
 
 
 Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+
 ```{r}
-instacart %>% 
-  filter(aisle == c("baking ingredients", "dog food care", "packaged vegetables fruits" )) %>% 
+baking_aisle = instacart %>% 
+  filter(aisle == "baking ingredients") %>%
   select(product_name, aisle) %>%   
   group_by(aisle, product_name) %>% 
-  count()
-  
+  count() %>% 
+  arrange(-n) %>%
+  .[0:3,]
+
+dog_aisle = instacart %>% 
+  filter(aisle == "dog food care") %>%
+  select(product_name, aisle) %>%   
+  group_by(aisle, product_name) %>% 
+  count() %>% 
+  arrange(-n) %>%
+  .[0:3,]
+
+veg_aisle = instacart %>% 
+  filter(aisle == "packaged vegetables fruits") %>%
+  select(product_name, aisle) %>%   
+  group_by(aisle, product_name) %>% 
+  count() %>% 
+  arrange(-n) %>%
+  .[0:3,]
+```
+
+```{r}
+three_aisles = 
+  bind_rows(baking_aisle, dog_aisle, veg_aisle) %>% 
+  rename(
+    "Top Products" = product_name, 
+    "Aisle" = aisle,
+    "Number of Orders" = n
+    ) 
+
+knitr::kable(three_aisles)
 ```
 
 
+
+
+
+
+
+
+
+
+
+
 Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+
 
 ```{r}
 instacart %>% 
@@ -104,10 +153,8 @@ instacart %>%
   mutate(
     Day = recode(Day, '0' = "Monday", '1' = "Tuesday", '2'="Wednesday", '3'="Thursday", '4'="Friday", '5'="Saturday", '6'="Sunday"), 
   ) %>% 
-  knitr::kable()
+  knitr::kable() 
 ```
-'Coffee Ice Cream: Mean Hour Ordered' = 'Coffee Ice Cream', 
-    'Pink Lady Apples: Mean Hour Ordered' = 'Pink Lady Apples'
 
 
 
@@ -183,8 +230,6 @@ brfss_smart2010 %>%
   theme_bw() 
 ```
 
-
-
 Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
 
 
@@ -237,9 +282,23 @@ Traditional analyses of accelerometer data focus on the total activity over the 
 
 ```{r}
 accel_data %>% 
+  group_by(day_id) %>% 
+  summarize(activity_sum =(sum(activity))) 
 ```
+It appears that on weekends the individual was either occasionally much less active, or would not wear the device. For example on Saturday, the 24, and Saturday the 31st, the there is practically no activity. Activity appears much more consistent during the week, and more variable on weekends. 
 
 
 Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 
 
+```{r}
+accel_data %>% 
+  ggplot(aes(x = minute, y = activity, group = day_id, color = day)) +
+  geom_line(size = 0.5) +
+  viridis::scale_color_viridis(
+    discrete = TRUE, 
+    name = "Day"
+    )
+```
+
+The most active period of the day is aroun minute 1250, or around 8 PM. The individual was least active from about 10 PM to 3 AM. There were occasional peaks of activity around lunchtime and 4 PM. The inidividual appears slightly more active on the weekend versus weekdays. 
