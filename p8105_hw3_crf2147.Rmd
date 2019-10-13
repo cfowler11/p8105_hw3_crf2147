@@ -6,6 +6,7 @@ output: github_document
 ---
 
 ```{r}
+#load packages used
 library(tidyverse)
 library(p8105.datasets)
 ```
@@ -14,10 +15,10 @@ library(p8105.datasets)
 # Problem 1 
 
 ```{r}
+#load data
 data("instacart")
 ```
 
-The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations. Then, do or answer the following (commenting on the results of each):
 
 
 This dataset has `r nrow(instacart)` rows and `r ncol(instacart)` variables. Each row represents a different item ordered by a instacart customer. 
@@ -28,28 +29,23 @@ Lastly we have information on the product being requested such as `product_id`, 
 For example, we know that customer 127134, in their 10th order from instacart, on a Friday at 9am added 'Hash Brown Potato Patties', in frozen appetizers sides aisle from the frozen department, for the first time as the 21st item in their cart. We can also see that 19 other orders in the data contained 'Hash Brown Potato Patties'.  
 
 ```{r results=FALSE}
+#searching for Hash Brown Potato Patties in dataset
 instacart %>% 
   filter(product_name == 'Hash Brown Potato Patties') %>% 
   nrow()
 ```
 
-How many aisles are there, and which aisles are the most items ordered from?
-
 ```{r}
+#counting number of aisles
 instacart %>% 
   group_by(aisle) %>% 
   count() %>% 
   nrow() 
 ```
-```{r}
-instacart %>% 
-  group_by(aisle) %>% 
-  count() %>% 
-  nrow()
-```
 
 
 ```{r}
+#finding top four most popular aisles 
 instacart %>% 
   group_by(aisle) %>% 
   count() %>% 
@@ -66,9 +62,9 @@ instacart %>%
 There are 134 aisles. The most popular are fresh vegetables, fresh fruits,  packaged vegetables fruits, and yogurt. 
 
 
-Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
 
 ```{r}
+#Building bar chart of most popular aisles 
 instacart %>% 
   group_by(aisle) %>% 
   count() %>% 
@@ -79,16 +75,15 @@ instacart %>%
   arrange(-n) %>% 
   ggplot(aes(x = reorder(aisle, -n), y = n, fill = department)) +
   geom_bar(stat = "identity") +
-  coord_flip()
+  coord_flip() +
+  labs(title = "Most Popular Aisles", y = "Number of Orders", x = "Aisle")
 
 ```
 
 
 
-
-Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
-
 ```{r}
+#picking top 3 products from baking aisle
 baking_aisle = instacart %>% 
   filter(aisle == "baking ingredients") %>%
   select(product_name, aisle) %>%   
@@ -97,6 +92,7 @@ baking_aisle = instacart %>%
   arrange(-n) %>%
   .[0:3,]
 
+#picking top 3 products from dog aisle
 dog_aisle = instacart %>% 
   filter(aisle == "dog food care") %>%
   select(product_name, aisle) %>%   
@@ -105,6 +101,7 @@ dog_aisle = instacart %>%
   arrange(-n) %>%
   .[0:3,]
 
+#picking top 3 products from veg aisle
 veg_aisle = instacart %>% 
   filter(aisle == "packaged vegetables fruits") %>%
   select(product_name, aisle) %>%   
@@ -115,6 +112,7 @@ veg_aisle = instacart %>%
 ```
 
 ```{r}
+#binding 3 tables together and cleaning
 three_aisles = 
   bind_rows(baking_aisle, dog_aisle, veg_aisle) %>% 
   rename(
@@ -137,19 +135,22 @@ knitr::kable(three_aisles)
 
 
 
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
 
 
 ```{r}
+#making table of apples and ice cream and time ordered
 instacart %>% 
-  filter(product_name == c('Pink Lady Apples', 'Coffee Ice Cream')) %>% 
+  filter(product_name %in% c('Pink Lady Apples', 'Coffee Ice Cream')) %>% 
   select(order_hour_of_day, order_dow, product_name) %>% 
   group_by(order_dow, product_name) %>% 
-  summarize(mean(order_hour_of_day)) %>% 
-  pivot_wider(names_from = product_name, values_from = 'mean(order_hour_of_day)') %>% 
+  summarize(mean_hour = round(mean(order_hour_of_day), digits = 2)) %>% 
+  pivot_wider(names_from = product_name, values_from = 'mean_hour') %>% 
   ungroup() %>% 
-  rename(Day = order_dow) %>% 
+  rename(Day = order_dow,
+         'Pink Lady Apple: mean hour' ='Pink Lady Apples',
+         'Coffee Ice Cream: mean hour' = 'Coffee Ice Cream'
+         ) %>% 
   mutate(
     Day = recode(Day, '0' = "Monday", '1' = "Tuesday", '2'="Wednesday", '3'="Thursday", '4'="Friday", '5'="Saturday", '6'="Sunday"), 
   ) %>% 
@@ -160,18 +161,16 @@ instacart %>%
 
 
 # Problem 2 
-```{r}
-data("brfss_smart2010")
-```
 
-First, do some data cleaning:
 
-format the data to use appropriate variable names;
-focus on the “Overall Health” topic
-include only responses from “Excellent” to “Poor”
-organize responses as a factor taking levels ordered from “Poor” to “Excellent”
+
 
 ```{r} 
+#reading in data
+data("brfss_smart2010")
+
+
+#data cleaning for brfss
 brfss_smart2010 = brfss_smart2010 %>% 
   janitor::clean_names() %>% 
   separate(locationdesc, 
@@ -180,9 +179,9 @@ brfss_smart2010 = brfss_smart2010 %>%
   select(-locationabbr) %>% 
   filter(
     topic == 'Overall Health',
-    response == c('Excellent', 'Good', 'Very Good', 'Fair', 'Poor')
+    response %in%  c('Excellent', 'Good', 'Very good', 'Fair', 'Poor')
   ) %>% 
-  mutate(response = forcats::fct_relevel(response, c("Poor", "Fair", "Good", "Very Good", "Excellent")))
+  mutate(response = forcats::fct_relevel(response, c("Poor", "Fair", "Good", "Very good", "Excellent")))
 ```
 
 
@@ -192,29 +191,43 @@ brfss_smart2010 = brfss_smart2010 %>%
 
 
 
-In 2002, which states were observed at 7 or more locations? What about in 2010?
+
+
 
 ```{r}
+#calculating states with 7+ locations in 2002
 brfss_smart2010 %>% 
-  filter(year==2002) %>% 
+  filter(
+    year==2002
+  ) %>% 
+  select(state, county) %>% 
+  distinct() %>% 
   count(state) %>% 
-  filter(n>=7)
+  filter(n>=7) %>% 
+  knitr::kable() 
 ```
+
 ```{r}
+#calculating states with 7+ locations in 2010
 brfss_smart2010 %>% 
-  filter(year == 2010) %>% 
+  filter(
+    year==2010
+  ) %>% 
+  select(state, county) %>% 
+  distinct() %>% 
   count(state) %>% 
-  filter(n>=7)
+  filter(n>=7) %>% 
+  knitr::kable() 
 ```
 
 
-In 2002, Massachusetts, New Jersey and Pennsylvania were observed at 7 or more locations. In 2010, California, Florida, Idaho, Massachusetts, Maryland, New York, Pennsylvania, and Texas were observed in 7 or more locations.  
+In 2002, Conneticut, Florida, Massachusetts, North Carolina, New Jersey and Pennsylvania were observed at 7 or more locations. In 2010, California, Colorado, Florida, Massachusetts, Maryland, North Carolina, Nebraska, New Jersey, New York, Ohio, Pennsylvania, South Carolina, Texas and Washington were observed in 7 or more locations.  
 
 
-Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the  data_value across locations within a state.
-Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
 
-```{r}
+
+```{r warning = FALSE}
+#creating new data set with mean values per year, and making spaghetti plot
 brfss_smart2010 %>% 
   filter(response == 'Excellent') %>% 
   group_by(state, year) %>% 
@@ -222,7 +235,7 @@ brfss_smart2010 %>%
   ggplot(
     aes(x = year, y = mean_value, color = state)) +
   geom_line() + 
-  labs(x = 'Year', y = 'Mean Data Value') + 
+  labs(x = 'Year', y = 'Mean Data Value', title = 'Data by State across Years') + 
   viridis::scale_color_viridis(
     discrete = TRUE, 
     name = "State"
@@ -230,12 +243,13 @@ brfss_smart2010 %>%
   theme_bw() 
 ```
 
-Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
 
 
 
 
 ```{r}
+#making 2 panel bar graph 
 brfss_smart2010 %>% 
   filter(
     year %in% c(2006, 2010), 
@@ -251,9 +265,9 @@ brfss_smart2010 %>%
 # Problem 3 
 
 
-Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
 
 ```{r}
+#tidying the data
 accel_data = read_csv("./data/accel_data.csv")
 accel_data = accel_data %>% 
   pivot_longer(
@@ -278,9 +292,10 @@ The dataset `accel_data` consists of `r nrow(accel_data)` observations by `r nco
 
 
 
-Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+
 
 ```{r}
+#looking at sum for each day
 accel_data %>% 
   group_by(day_id) %>% 
   summarize(activity_sum =(sum(activity))) 
@@ -288,17 +303,18 @@ accel_data %>%
 It appears that on weekends the individual was either occasionally much less active, or would not wear the device. For example on Saturday, the 24, and Saturday the 31st, the there is practically no activity. Activity appears much more consistent during the week, and more variable on weekends. 
 
 
-Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 
 
 ```{r}
+#making graoh with activity across each day
 accel_data %>% 
   ggplot(aes(x = minute, y = activity, group = day_id, color = day)) +
   geom_line(size = 0.5) +
   viridis::scale_color_viridis(
     discrete = TRUE, 
     name = "Day"
-    )
+    ) + 
+  labs(title = "Activity by Day", x = "Minute of Day", y = "Activity")
 ```
 
 The most active period of the day is aroun minute 1250, or around 8 PM. The individual was least active from about 10 PM to 3 AM. There were occasional peaks of activity around lunchtime and 4 PM. The inidividual appears slightly more active on the weekend versus weekdays. 
